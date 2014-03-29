@@ -1,7 +1,7 @@
 package com.nectivo.scanner;
 
 /**
- * Created by pbabel on 28.03.2014.
+ * Created by piobab on 28.03.2014.
  */
 public class CameraNotFoundException extends Exception {
 
