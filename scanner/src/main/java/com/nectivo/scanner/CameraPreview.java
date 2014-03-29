@@ -14,7 +14,7 @@ import android.view.WindowManager;
 import java.util.List;
 
 /**
- * Created by pbabel on 28.03.2014.
+ * Created by piobab on 28.03.2014.
  */
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private static final String TAG = "CameraPreview";
@@ -68,7 +68,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         // stop preview before making changes
         stopCameraPreview();
         // start preview with new settings
-        showCameraPreview();
+        showCameraPreview(width, height);
     }
 
     @Override
