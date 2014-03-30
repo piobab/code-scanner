@@ -22,9 +22,15 @@ public abstract class ScannerView extends FrameLayout implements Camera.PreviewC
         setupLayout();
     }
 
-    public void setupLayout() {
+    private void setupLayout() {
         mPreview = new CameraPreview(getContext());
         addView(mPreview);
+    }
+
+    public void listSupportedPreviewSizes() {
+        if(mPreview != null) {
+            mPreview.listSupportedPreviewSizes();
+        }
     }
 
     public void startFrontCamera() {

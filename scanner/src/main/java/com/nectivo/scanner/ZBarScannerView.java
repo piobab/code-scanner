@@ -44,10 +44,6 @@ public class ZBarScannerView extends ScannerView {
         setupScanner(codeTypes);
     }
 
-    public void setResultHandler(ResultHandler resultHandler) {
-        mResultHandler = resultHandler;
-    }
-
     private void setupScanner(int[] symbols) {
         mScanner = new ImageScanner();
         // Set x and y density to one in order to support rotated qr code
@@ -60,6 +56,14 @@ public class ZBarScannerView extends ScannerView {
                 mScanner.setConfig(symbol, Config.ENABLE, 1);
             }
         }
+    }
+
+    /**
+     * Register callback in order to receive data from scanner.
+     * @param resultHandler
+     */
+    public void setResultHandler(ResultHandler resultHandler) {
+        mResultHandler = resultHandler;
     }
 
     @Override
