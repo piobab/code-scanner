@@ -1,6 +1,7 @@
 package com.nectivo.scanner;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.hardware.Camera;
 import android.os.Handler;
 import android.util.AttributeSet;
@@ -21,6 +22,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     private Camera mCamera;
     private Handler mAutoFocusHandler;
+    private int mLastReportedWidth;
+    private int mLastReportedHeight;
     private boolean mPreviewing = true;
     private boolean mAutoFocus = true;
     private Camera.PreviewCallback mPreviewCallback;
@@ -49,14 +52,24 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             if(mPreviewing) {
                 requestLayout();
             } else {
-                showCameraPreview();
+                startCameraPreview();
+            }
+        }
+    }
+
+    public void listSupportedPreviewSizes() {
+        if(mCamera != null) {
+            List<Camera.Size> sizes = mCamera.getParameters().getSupportedPreviewSizes();
+            for(Camera.Size size : sizes) {
+                Log.d(TAG, "preview size: " + size.width + "x" + size.height);
             }
         }
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        showCameraPreview();
+        // Preparation of the camera is moved to surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height)
+        // because is always called at least once, after surfaceCreated(SurfaceHolder).
     }
 
     @Override
@@ -65,10 +78,14 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             // preview surface does not exist
             return;
         }
+
+        mLastReportedWidth = width;
+        mLastReportedHeight = height;
+
         // stop preview before making changes
         stopCameraPreview();
         // start preview with new settings
-        showCameraPreview(width, height);
+        startCameraPreview();
     }
 
     @Override
@@ -76,34 +93,19 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         stopCameraPreview();
     }
 
-    public void showCameraPreview() {
+    private void startCameraPreview() {
         if(mCamera != null) {
             try {
+                Log.d(TAG, "start camera preview with last reported size: " + mLastReportedWidth + "x" + mLastReportedHeight);
                 mPreviewing = true;
+                // Camera preview size is calculated in #surfaceChanged.
+                setupCameraParameters(mLastReportedWidth, mLastReportedHeight);
                 mCamera.setPreviewDisplay(getHolder());
                 mCamera.setDisplayOrientation(getDisplayOrientation());
                 mCamera.setOneShotPreviewCallback(mPreviewCallback);
                 mCamera.startPreview();
                 if(mAutoFocus) {
-                    mCamera.autoFocus(autoFocusCB);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, e.toString(), e);
-            }
-        }
-    }
-
-    public void showCameraPreview(int width, int height) {
-        if(mCamera != null) {
-            try {
-                mPreviewing = true;
-                setupCameraParameters(width, height);
-                mCamera.setPreviewDisplay(getHolder());
-                mCamera.setDisplayOrientation(getDisplayOrientation());
-                mCamera.setOneShotPreviewCallback(mPreviewCallback);
-                mCamera.startPreview();
-                if(mAutoFocus) {
-                    mCamera.autoFocus(autoFocusCB);
+                    mCamera.autoFocus(autoFocusCallback);
                 }
             } catch (Exception e) {
                 Log.e(TAG, e.toString(), e);
@@ -114,6 +116,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void stopCameraPreview() {
         if(mCamera != null) {
             try {
+                Log.d(TAG, "stop camera preview");
                 mPreviewing = false;
                 mCamera.cancelAutoFocus();
                 mCamera.setOneShotPreviewCallback(null);
@@ -124,14 +127,16 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
     }
 
-    public void setupCameraParameters(int width, int height) {
-        Camera.Size optimalSize = getOptimalPreviewSize(width, height);
+    private void setupCameraParameters(int width, int height) {
+        List<Camera.Size> sizes = mCamera.getParameters().getSupportedPreviewSizes();
+        Camera.Size optimalSize = getOptimalPreviewSize(sizes, width, height);
+        Log.d(TAG, "optimal preview size: " + optimalSize.width + "x" + optimalSize.height);
         Camera.Parameters parameters = mCamera.getParameters();
         parameters.setPreviewSize(optimalSize.width, optimalSize.height);
         mCamera.setParameters(parameters);
     }
 
-    public int getDisplayOrientation() {
+    private int getDisplayOrientation() {
         Camera.CameraInfo info = new Camera.CameraInfo();
         Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, info);
         WindowManager wm = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
@@ -156,12 +161,15 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         return result;
     }
 
-    private Camera.Size getOptimalPreviewSize(int width, int height) {
-        if(mCamera == null) {
-            return null;
+    private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int width, int height) {
+        // Default camera resolution is for landscape mode so in portrait mode we have to change
+        // width with height
+        if(DisplayUtils.getScreenOrientation(getContext()) == Configuration.ORIENTATION_PORTRAIT) {
+            int tmp = width;
+            width = height;
+            height = tmp;
         }
 
-        List<Camera.Size> sizes = mCamera.getParameters().getSupportedPreviewSizes();
         final double ASPECT_TOLERANCE = 0.1;
         double targetRatio = (double) width / height;
         if (sizes == null) return null;
@@ -195,16 +203,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
     public void setAutoFocus(boolean state) {
-        if(mCamera != null && mPreviewing) {
-            if(state == mAutoFocus) {
-                return;
-            }
+        if (mCamera != null && mPreviewing && state != mAutoFocus) {
             mAutoFocus = state;
-            if(mAutoFocus) {
-                Log.v(TAG, "Starting autofocus");
-                mCamera.autoFocus(autoFocusCB);
+            if (mAutoFocus) {
+                Log.v(TAG, "Starting auto-focus");
+                mCamera.autoFocus(autoFocusCallback);
             } else {
-                Log.v(TAG, "Cancelling autofocus");
+                Log.v(TAG, "Cancelling auto-focus");
                 mCamera.cancelAutoFocus();
             }
         }
@@ -213,13 +218,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private Runnable doAutoFocus = new Runnable() {
         public void run() {
             if(mCamera != null && mPreviewing && mAutoFocus) {
-                mCamera.autoFocus(autoFocusCB);
+                mCamera.autoFocus(autoFocusCallback);
             }
         }
     };
 
     // Mimic continuous auto-focusing
-    Camera.AutoFocusCallback autoFocusCB = new Camera.AutoFocusCallback() {
+    private Camera.AutoFocusCallback autoFocusCallback = new Camera.AutoFocusCallback() {
         public void onAutoFocus(boolean success, Camera camera) {
             mAutoFocusHandler.postDelayed(doAutoFocus, 1000);
         }
