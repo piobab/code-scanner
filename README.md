@@ -68,5 +68,24 @@ public class ZBarScannerActivity extends Activity implements ZBarScannerView.Res
 
 ```
 
-Download
---------
+4.) Use codes types from package net.sourceforge.zbar:
+
+```java
+    Symbol.NONE
+    Symbol.PARTIAL
+    Symbol.EAN8
+    Symbol.UPCE
+    Symbol.ISBN10
+    Symbol.UPCA
+    Symbol.EAN13
+    Symbol.ISBN13
+    Symbol.I25
+    Symbol.DATABAR
+    Symbol.DATABAR_EXP
+    Symbol.CODABAR
+    Symbol.CODE39
+    Symbol.PDF417
+    Symbol.QRCODE
+    Symbol.CODE93
+    Symbol.CODE128
+```
