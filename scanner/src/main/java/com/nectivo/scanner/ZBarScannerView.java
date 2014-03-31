@@ -47,8 +47,8 @@ public class ZBarScannerView extends ScannerView {
     private void setupScanner(int[] symbols) {
         mScanner = new ImageScanner();
         // Set x and y density to one in order to support rotated qr code
-        mScanner.setConfig(0, Config.X_DENSITY, 3);
-        mScanner.setConfig(0, Config.Y_DENSITY, 3);
+        mScanner.setConfig(0, Config.X_DENSITY, 1);
+        mScanner.setConfig(0, Config.Y_DENSITY, 1);
 
         if (symbols != null) {
             mScanner.setConfig(Symbol.NONE, Config.ENABLE, 0);
