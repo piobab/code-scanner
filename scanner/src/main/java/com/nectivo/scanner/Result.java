@@ -12,7 +12,7 @@ public class Result {
     }
 
     public void setCodeType(int codeType) {
-        this.mCodeType = mCodeType;
+        this.mCodeType = codeType;
     }
 
     public String getContent() {
@@ -20,6 +20,6 @@ public class Result {
     }
 
     public void setContent(String content) {
-        this.mContent = mContent;
+        this.mContent = content;
     }
 }
